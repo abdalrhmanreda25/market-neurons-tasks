@@ -108,7 +108,7 @@ function TaskDetail() {
       </header>
 
       <div className="page">
-        <div className="grid" style={{ gridTemplateColumns: '1.7fr 1fr', alignItems: 'start' }}>
+        <div className="grid grid-split" style={{ alignItems: 'start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <section className="card">
               <div className="card-head">

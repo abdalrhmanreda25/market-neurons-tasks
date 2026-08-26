@@ -15,21 +15,21 @@ export const metadata = {
 }
 
 // Applied before first paint so the theme never flashes on load.
+// Light is the default; dark only when the visitor has chosen it.
 const themeScript = `
 (function () {
   try {
     var stored = localStorage.getItem('${THEME_KEY}');
-    var theme = stored || 'dark';
-    document.documentElement.setAttribute('data-theme', theme);
+    document.documentElement.setAttribute('data-theme', stored === 'dark' ? 'dark' : 'light');
   } catch (e) {
-    document.documentElement.setAttribute('data-theme', 'dark');
+    document.documentElement.setAttribute('data-theme', 'light');
   }
 })();
 `
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" data-theme="dark" className={jakarta.className} suppressHydrationWarning>
+    <html lang="en" data-theme="light" className={jakarta.className} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>

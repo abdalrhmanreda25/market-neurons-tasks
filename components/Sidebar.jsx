@@ -16,13 +16,13 @@ const LINKS = [
   { href: '/settings', label: 'Settings', icon: '⚙' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ open = false, onNavigate }) {
   const pathname = usePathname()
   const { user, signOut } = useAuth()
   const { teams, teamId, setActiveTeamId } = useWorkspace()
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${open ? 'open' : ''}`}>
       <div className="brand">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img className="brand-logo" src="/logo.svg" alt="Market Neurons" width={34} height={34} />
@@ -46,6 +46,7 @@ export default function Sidebar() {
             key={link.href}
             href={link.href}
             className={`nav-link ${pathname.startsWith(link.href) ? 'active' : ''}`}
+            onClick={onNavigate}
           >
             <span className="nav-icon">{link.icon}</span>
             {link.label}
@@ -54,7 +55,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-foot">
-        <Link href="/profile" className="nav-link" style={{ padding: '8px 6px' }} title="Edit your profile">
+        <Link href="/profile" className="nav-link" style={{ padding: '8px 6px' }} title="Edit your profile" onClick={onNavigate}>
           <Avatar
             name={user?.displayName || user?.email}
             seed={user?.uid}

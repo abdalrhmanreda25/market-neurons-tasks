@@ -89,7 +89,7 @@ export default function HoursPage() {
           <StatCard label="Estimated remaining" value={hours(Math.max(0, stats.estimated - stats.totalHours))} hint={`${hours(stats.estimated)} estimated`} />
         </div>
 
-        <div className="grid" style={{ gridTemplateColumns: '1.6fr 1fr' }}>
+        <div className="grid grid-split">
           <section className="card">
             <div className="card-head">
               <div>

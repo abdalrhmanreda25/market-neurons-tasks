@@ -5,27 +5,53 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 const ThemeContext = createContext(null)
 export const THEME_KEY = 'mn.theme'
 
+/**
+ * The document attribute is the single source of truth, so reading and writing
+ * it directly works even for a component rendered outside the provider.
+ */
+export function readTheme() {
+  if (typeof document === 'undefined') return 'light'
+  return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'
+}
+
+export function applyTheme(next) {
+  const theme = next === 'dark' ? 'dark' : 'light'
+  document.documentElement.setAttribute('data-theme', theme)
+  try {
+    window.localStorage.setItem(THEME_KEY, theme)
+  } catch {
+    /* private mode - the choice just will not persist */
+  }
+  // Let every mounted toggle re-read, whatever tree it lives in.
+  window.dispatchEvent(new CustomEvent('mn:themechange', { detail: theme }))
+  return theme
+}
+
 export function useTheme() {
-  return useContext(ThemeContext) || { theme: 'light', toggle: () => {} }
+  const ctx = useContext(ThemeContext)
+  if (ctx) return ctx
+  // No provider above us: still drive the real theme rather than no-op.
+  return {
+    theme: readTheme(),
+    setTheme: applyTheme,
+    toggle: () => applyTheme(readTheme() === 'dark' ? 'light' : 'dark'),
+  }
 }
 
 export default function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState('dark')
+  const [theme, setThemeState] = useState('light')
 
   useEffect(() => {
-    // The inline script in <head> has already applied the class; mirror it here.
-    const current = document.documentElement.getAttribute('data-theme') || 'dark'
-    setTheme(current)
+    // The inline script in <head> already applied it; mirror it into state and
+    // stay in sync with any toggle, wherever it is rendered.
+    setThemeState(readTheme())
+    const sync = () => setThemeState(readTheme())
+    window.addEventListener('mn:themechange', sync)
+    return () => window.removeEventListener('mn:themechange', sync)
   }, [])
 
   const apply = useCallback((next) => {
-    document.documentElement.setAttribute('data-theme', next)
-    try {
-      window.localStorage.setItem(THEME_KEY, next)
-    } catch {
-      /* private mode — the choice just will not persist */
-    }
-    setTheme(next)
+    setThemeState(applyTheme(next))
   }, [])
 
   const value = useMemo(
@@ -37,7 +63,17 @@ export default function ThemeProvider({ children }) {
 }
 
 export function ThemeToggle({ className = '' }) {
-  const { theme, toggle } = useTheme()
+  const [theme, setTheme] = useState('light')
+
+  useEffect(() => {
+    setTheme(readTheme())
+    const sync = () => setTheme(readTheme())
+    window.addEventListener('mn:themechange', sync)
+    return () => window.removeEventListener('mn:themechange', sync)
+  }, [])
+
+  const toggle = () => setTheme(applyTheme(readTheme() === 'dark' ? 'light' : 'dark'))
+
   return (
     <button
       type="button"

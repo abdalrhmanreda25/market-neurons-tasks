@@ -73,7 +73,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="grid" style={{ gridTemplateColumns: '1.6fr 1fr' }}>
+        <div className="grid grid-split">
           <section className="card">
             <div className="card-head">
               <div>
