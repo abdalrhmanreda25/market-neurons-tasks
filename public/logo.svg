@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Market Neurons">
+  <!-- Outer M -->
+  <path fill="#0F0F10" d="M4,8 L60,48 L116,8 L116,112 L102,104 L102,30 L60,64 L18,30 L18,104 L4,112 Z"/>
+  <!-- Inner N -->
+  <path fill="#0F0F10" d="M30,48 L30,102 L42,95 L42,72 L90,102 L90,48 L78,55 L78,78 Z"/>
+</svg>
