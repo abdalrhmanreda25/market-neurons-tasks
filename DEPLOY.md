@@ -1,7 +1,44 @@
-# Deploying to Hostinger
+# Deploying
 
-The tasks app is a **static export** — no Node process, no server. It runs entirely
-in the browser against Firebase, so any plain web host can serve it.
+The tasks app is a **static export** - no Node process, no server. It runs entirely
+in the browser against Firebase, so any host can serve it.
+
+## Vercel (current target)
+
+1. Go to <https://vercel.com/new> and import
+   `abdalrhmanreda25/market-neurons-tasks`.
+2. Framework preset is detected as **Next.js**. Leave the build settings alone -
+   `npm run build` and the `out/` export are picked up automatically.
+3. Deploy.
+
+**No environment variables are required.** The Firebase web config lives in the
+committed `.env.production`, so the build works out of the box. Those values are
+public by design - they are compiled into the JS bundle and visible to anyone who
+opens the site. Security comes from Firestore rules and the Authorized Domains
+list, not from hiding them. To point a deployment at a different Firebase project,
+set the same `NEXT_PUBLIC_FIREBASE_*` names in the Vercel dashboard; they override
+the file.
+
+### After the first deploy
+
+Add the production domain to Firebase Console ->
+**Authentication -> Settings -> Authorized domains**, e.g.
+`market-neurons-tasks.vercel.app`, plus any custom domain you attach.
+
+Sign-in is rejected from any domain not on that list.
+
+> **Preview deployments:** every branch/PR preview gets its own
+> `...-<hash>.vercel.app` URL, and none of them will be authorized, so Google
+> sign-in fails there. Either add a specific preview domain when you need one, or
+> test sign-in on the production URL and on `localhost`.
+
+The app is `output: 'export'`, which Vercel serves as static files. If you ever
+need real server rendering or API routes, drop that line from `next.config.mjs`
+and Vercel will build it as a full Next.js app instead.
+
+---
+
+# Hostinger (alternative)
 
 `marketneurons.tech` already runs a different app (the Agri-Intelligence Platform)
 on its own Next.js server, so the tasks app lives on its **own subdomain** and does
