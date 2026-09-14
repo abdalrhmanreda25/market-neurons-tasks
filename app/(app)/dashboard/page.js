@@ -18,7 +18,8 @@ import {
 } from 'recharts'
 import { useWorkspace } from '@/components/WorkspaceProvider'
 import { useChartTheme } from '@/components/ThemeProvider'
-import { Avatar, Empty, Spinner, StatCard, StatusBadge } from '@/components/ui'
+import { AvatarStack, Empty, Spinner, StatCard, StatusBadge } from '@/components/ui'
+import { taskAssignees } from '@/lib/tasks'
 import {
   formatDate,
   hours,
@@ -28,12 +29,13 @@ import {
   memberWorkload,
   priorityBreakdown,
   statusBreakdown,
+  sprintSummary,
   summarise,
 } from '@/lib/analytics'
 
 
 export default function DashboardPage() {
-  const { team, tasks, timeLogs, members, loading, memberPhoto } = useWorkspace()
+  const { team, tasks, timeLogs, members, loading, memberName, memberPhoto, activeSprint } = useWorkspace()
   const chart = useChartTheme()
 
   if (loading) return <div style={{ padding: 60 }}><Spinner /></div>
@@ -72,6 +74,8 @@ export default function DashboardPage() {
             accent={stats.overdue ? 'var(--red)' : undefined}
           />
         </div>
+
+        {activeSprint ? <ActiveSprintCard sprint={activeSprint} tasks={tasks} timeLogs={timeLogs} /> : null}
 
         <div className="grid grid-split">
           <section className="card">
@@ -244,14 +248,7 @@ export default function DashboardPage() {
                         {formatDate(task.dueDate)}
                       </td>
                       <td style={{ width: 40 }}>
-                        {task.assigneeId ? (
-                          <Avatar
-                            name={members.find((m) => m.uid === task.assigneeId)?.displayName}
-                            seed={task.assigneeId}
-                            src={memberPhoto(task.assigneeId)}
-                            size="avatar-sm"
-                          />
-                        ) : null}
+                        <AvatarStack uids={taskAssignees(task)} nameOf={memberName} photoOf={memberPhoto} max={2} />
                       </td>
                     </tr>
                   ))}
@@ -264,5 +261,68 @@ export default function DashboardPage() {
         </div>
       </div>
     </>
+  )
+}
+
+function ActiveSprintCard({ sprint, tasks, timeLogs }) {
+  const sum = sprintSummary(sprint, tasks, timeLogs)
+  const timePct = sum.days.total ? Math.round((sum.days.elapsed / sum.days.total) * 100) : 0
+  // Behind when the share of time used runs well ahead of the share of work done.
+  const behind = sum.total > 0 && timePct - sum.completion > 20
+
+  return (
+    <section className="card sprint-hero">
+      <div className="between wrap" style={{ gap: 14 }}>
+        <div style={{ minWidth: 0 }}>
+          <div className="row" style={{ gap: 8 }}>
+            <span className="badge" style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+              <span className="dot" style={{ background: 'var(--accent)' }} /> Active sprint
+            </span>
+            {behind ? (
+              <span className="badge" style={{ background: 'rgba(229,50,45,0.1)', color: 'var(--red)' }}>Behind schedule</span>
+            ) : null}
+          </div>
+          <h2 style={{ fontSize: 20, marginTop: 10 }}>{sprint.name}</h2>
+          {sprint.goal ? <p className="muted small" style={{ marginTop: 4 }}>{sprint.goal}</p> : null}
+        </div>
+        <div className="row wrap" style={{ gap: 8 }}>
+          <Link href="/tasks?sprint=active" className="btn btn-sm">Sprint board</Link>
+          <Link href="/sprints" className="btn btn-primary btn-sm">View sprint</Link>
+        </div>
+      </div>
+
+      <div className="grid grid-4" style={{ marginTop: 18, gap: 12 }}>
+        <div>
+          <div className="stat-label">Progress</div>
+          <div className="stat-value" style={{ fontSize: 24 }}>{sum.completion}%</div>
+          <div className="stat-hint">{sum.done} of {sum.total} tasks done</div>
+        </div>
+        <div>
+          <div className="stat-label">Days left</div>
+          <div className="stat-value" style={{ fontSize: 24 }}>{sum.days.left}</div>
+          <div className="stat-hint">of {sum.days.total} · ends {formatDate(sprint.endDate)}</div>
+        </div>
+        <div>
+          <div className="stat-label">Remaining</div>
+          <div className="stat-value" style={{ fontSize: 24 }}>{hours(sum.remainingHours)}</div>
+          <div className="stat-hint">{hours(sum.estimate)} estimated</div>
+        </div>
+        <div>
+          <div className="stat-label">Logged</div>
+          <div className="stat-value" style={{ fontSize: 24 }}>{hours(sum.logged)}</div>
+          <div className="stat-hint">{sum.inProgress} in progress</div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <div className="between small faint" style={{ marginBottom: 6 }}>
+          <span>Work done</span><span>Time elapsed {timePct}%</span>
+        </div>
+        <div className="progress progress-dual">
+          <span style={{ width: `${sum.completion}%`, background: 'var(--accent)' }} />
+          <i style={{ left: `${timePct}%` }} title={`${timePct}% of sprint time elapsed`} />
+        </div>
+      </div>
+    </section>
   )
 }

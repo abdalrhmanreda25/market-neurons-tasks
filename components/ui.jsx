@@ -113,3 +113,31 @@ export function Empty({ title, hint, action }) {
     </div>
   )
 }
+
+/**
+ * Overlapping avatars for a task's assignees. Shows up to `max`, then a "+N"
+ * pill; every name is still available in the tooltip.
+ */
+export function AvatarStack({ uids = [], nameOf, photoOf, max = 3, size = 'avatar-sm', showNames = false }) {
+  if (!uids.length) return <span className="faint small">Unassigned</span>
+
+  const shown = uids.slice(0, max)
+  const extra = uids.length - shown.length
+  const allNames = uids.map((uid) => nameOf(uid)).join(', ')
+
+  return (
+    <div className="row" style={{ gap: 8, minWidth: 0 }} title={allNames}>
+      <div className="avatar-stack">
+        {shown.map((uid) => (
+          <Avatar key={uid} name={nameOf(uid)} seed={uid} src={photoOf ? photoOf(uid) : null} size={size} />
+        ))}
+        {extra > 0 ? <span className={`avatar avatar-more ${size}`}>+{extra}</span> : null}
+      </div>
+      {showNames ? (
+        <span className="small" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {uids.length === 1 ? nameOf(uids[0]) : `${nameOf(uids[0])} +${uids.length - 1}`}
+        </span>
+      ) : null}
+    </div>
+  )
+}

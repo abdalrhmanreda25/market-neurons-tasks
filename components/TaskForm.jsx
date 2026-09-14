@@ -2,16 +2,19 @@
 
 import { useState } from 'react'
 import { Modal } from './ui'
+import AssigneePicker from './AssigneePicker'
 import { PRIORITIES, STATUSES } from '@/lib/constants'
+import { taskAssignees } from '@/lib/tasks'
 import { friendlyError } from '@/lib/errors'
 
-export default function TaskForm({ initial, members, onSubmit, onClose }) {
+export default function TaskForm({ initial, members, sprints = [], defaultSprintId = null, onSubmit, onClose }) {
   const [form, setForm] = useState({
     title: initial?.title || '',
     description: initial?.description || '',
     status: initial?.status || 'todo',
     priority: initial?.priority || 'medium',
-    assigneeId: initial?.assigneeId || '',
+    assigneeIds: taskAssignees(initial),
+    sprintId: initial ? initial.sprintId || '' : defaultSprintId || '',
     dueDate: initial?.dueDate || '',
     estimateHours: initial?.estimateHours || '',
   })
@@ -19,6 +22,10 @@ export default function TaskForm({ initial, members, onSubmit, onClose }) {
   const [busy, setBusy] = useState(false)
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+
+  // Completed sprints are closed for new work, but a task already in one keeps
+  // it as an option so opening the form does not silently move the task.
+  const sprintOptions = sprints.filter((s) => s.status !== 'completed' || s.id === initial?.sprintId)
 
   const submit = async (e) => {
     e.preventDefault()
@@ -28,7 +35,8 @@ export default function TaskForm({ initial, members, onSubmit, onClose }) {
     try {
       await onSubmit({
         ...form,
-        assigneeId: form.assigneeId || null,
+        assigneeIds: form.assigneeIds,
+        sprintId: form.sprintId || null,
         dueDate: form.dueDate || null,
         estimateHours: Number(form.estimateHours) || 0,
       })
@@ -44,6 +52,7 @@ export default function TaskForm({ initial, members, onSubmit, onClose }) {
       title={initial ? 'Edit task' : 'New task'}
       subtitle={initial ? 'Update the details of this task.' : 'Add work to the board.'}
       onClose={onClose}
+      wide
     >
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         {error ? <div className="alert alert-error">{error}</div> : null}
@@ -60,6 +69,15 @@ export default function TaskForm({ initial, members, onSubmit, onClose }) {
             placeholder="What needs to happen, and what does done look like?" />
         </div>
 
+        <div className="field">
+          <label className="label">Assignees</label>
+          <AssigneePicker
+            members={members}
+            value={form.assigneeIds}
+            onChange={(ids) => setForm((f) => ({ ...f, assigneeIds: ids }))}
+          />
+        </div>
+
         <div className="grid grid-2" style={{ gap: 12 }}>
           <div className="field">
             <label className="label">Status</label>
@@ -74,11 +92,13 @@ export default function TaskForm({ initial, members, onSubmit, onClose }) {
             </select>
           </div>
           <div className="field">
-            <label className="label">Assignee</label>
-            <select className="select" value={form.assigneeId} onChange={set('assigneeId')}>
-              <option value="">Unassigned</option>
-              {members.map((m) => (
-                <option key={m.uid} value={m.uid}>{m.displayName || m.email}</option>
+            <label className="label">Sprint</label>
+            <select className="select" value={form.sprintId} onChange={set('sprintId')}>
+              <option value="">Backlog (no sprint)</option>
+              {sprintOptions.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}{s.status === 'active' ? ' — active' : s.status === 'completed' ? ' — completed' : ''}
+                </option>
               ))}
             </select>
           </div>

@@ -7,7 +7,7 @@ import { useAuth } from '@/components/AuthProvider'
 import { useWorkspace } from '@/components/WorkspaceProvider'
 import TaskForm from '@/components/TaskForm'
 import LogHoursModal from '@/components/LogHoursModal'
-import { Avatar, Empty, PriorityBadge, Spinner, StatusBadge } from '@/components/ui'
+import { Avatar, AvatarStack, Empty, PriorityBadge, Spinner, StatusBadge } from '@/components/ui'
 import { STATUSES } from '@/lib/constants'
 import {
   addComment,
@@ -19,13 +19,15 @@ import {
   updateTask,
 } from '@/lib/db'
 import { formatDate, formatTimestamp, hours, isOverdue } from '@/lib/analytics'
+import { isAssignedTo, taskAssignees } from '@/lib/tasks'
+import AssigneePicker from '@/components/AssigneePicker'
 import { friendlyError } from '@/lib/errors'
 
 function TaskDetail() {
   const taskId = useSearchParams().get('id')
   const router = useRouter()
   const { user } = useAuth()
-  const { teamId, members, timeLogs, canManage, memberName, memberPhoto, loading } = useWorkspace()
+  const { teamId, members, timeLogs, sprints, canManage, memberName, memberPhoto, loading } = useWorkspace()
 
   const [task, setTask] = useState(undefined)
   const [comments, setComments] = useState([])
@@ -34,6 +36,7 @@ function TaskDetail() {
   const [logging, setLogging] = useState(false)
   const [error, setError] = useState('')
   const [posting, setPosting] = useState(false)
+  const [editingAssignees, setEditingAssignees] = useState(false)
 
   useEffect(() => {
     if (!teamId || !taskId) return undefined
@@ -64,7 +67,9 @@ function TaskDetail() {
     )
   }
 
-  const canEdit = canManage || task.createdBy === user.uid || task.assigneeId === user.uid
+  const assignees = taskAssignees(task)
+  const canEdit = canManage || task.createdBy === user.uid || isAssignedTo(task, user.uid)
+  const sprintChoices = sprints.filter((sp) => sp.status !== 'completed' || sp.id === task.sprintId)
   const progress = task.estimateHours
     ? Math.min(100, Math.round(((task.loggedHours || 0) / task.estimateHours) * 100))
     : 0
@@ -184,7 +189,7 @@ function TaskDetail() {
                     <select
                       className="select"
                       value={task.status}
-                      onChange={(e) => updateTask(teamId, taskId, { status: e.target.value })}
+                      onChange={(e) => updateTask(teamId, taskId, { status: e.target.value }, task)}
                     >
                       {STATUSES.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
                     </select>
@@ -196,14 +201,52 @@ function TaskDetail() {
                   <PriorityBadge priority={task.priority} />
                 </div>
 
-                <div className="between">
-                  <span className="label">Assignee</span>
-                  {task.assigneeId ? (
-                    <div className="row">
-                      <Avatar name={memberName(task.assigneeId)} seed={task.assigneeId} src={memberPhoto(task.assigneeId)} size="avatar-sm" />
-                      <span className="small">{memberName(task.assigneeId)}</span>
+                <div className="field">
+                  <div className="between">
+                    <span className="label">Assignees{assignees.length ? ` (${assignees.length})` : ''}</span>
+                    {canEdit ? (
+                      <button type="button" className="btn btn-ghost btn-sm" style={{ padding: '2px 8px' }}
+                        onClick={() => setEditingAssignees((v) => !v)}>
+                        {editingAssignees ? 'Done' : 'Change'}
+                      </button>
+                    ) : null}
+                  </div>
+                  {editingAssignees ? (
+                    <AssigneePicker
+                      members={members}
+                      value={assignees}
+                      onChange={(ids) => updateTask(teamId, taskId, { assigneeIds: ids }, task)}
+                    />
+                  ) : assignees.length ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {assignees.map((uid) => (
+                        <div key={uid} className="row">
+                          <Avatar name={memberName(uid)} seed={uid} src={memberPhoto(uid)} size="avatar-sm" />
+                          <span className="small">{memberName(uid)}</span>
+                        </div>
+                      ))}
                     </div>
                   ) : <span className="faint small">Unassigned</span>}
+                </div>
+
+                <div className="field">
+                  <span className="label">Sprint</span>
+                  {canEdit ? (
+                    <select
+                      className="select"
+                      value={task.sprintId || ''}
+                      onChange={(e) => updateTask(teamId, taskId, { sprintId: e.target.value || null }, task)}
+                    >
+                      <option value="">Backlog (no sprint)</option>
+                      {sprintChoices.map((sp) => (
+                        <option key={sp.id} value={sp.id}>
+                          {sp.name}{sp.status === 'active' ? ' — active' : sp.status === 'completed' ? ' — completed' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span className="small">{sprints.find((sp) => sp.id === task.sprintId)?.name || 'Backlog'}</span>
+                  )}
                 </div>
 
                 <div className="between">
@@ -257,8 +300,9 @@ function TaskDetail() {
         <TaskForm
           initial={task}
           members={members}
+          sprints={sprints}
           onClose={() => setEditing(false)}
-          onSubmit={(data) => updateTask(teamId, taskId, data)}
+          onSubmit={(data) => updateTask(teamId, taskId, data, task)}
         />
       ) : null}
 

@@ -371,6 +371,96 @@ nextjs-portal,
 .recharts-cartesian-axis-tick text { fill: var(--faint); font-size: 11px; }
 .recharts-surface { overflow: visible; }
 
+
+/* ============================================================ assignees */
+
+.avatar-xs { width: 22px; height: 22px; font-size: 9.5px; }
+
+/* Overlapping stack; the ring matches the surface so avatars read as separate. */
+.avatar-stack { display: flex; align-items: center; flex-shrink: 0; }
+.avatar-stack > * { margin-left: -8px; box-shadow: 0 0 0 2px var(--panel); }
+.avatar-stack > *:first-child { margin-left: 0; }
+.avatar-more {
+  background: var(--panel-2); color: var(--muted);
+  font-weight: 700; display: grid; place-items: center;
+}
+
+.chip-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 11px 4px 4px; border-radius: var(--radius-pill);
+  border: 1px solid var(--border); background: var(--panel);
+  font-size: 12.5px; font-weight: 550; cursor: pointer;
+  transition: border-color 0.14s, background 0.14s, color 0.14s;
+}
+.chip:hover { border-color: var(--accent); }
+.chip.selected { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.chip-check { font-weight: 800; font-size: 11px; }
+
+/* ============================================================== sprints */
+
+.sprint-tag {
+  align-self: flex-start;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  background: var(--panel-2); padding: 2px 8px; border-radius: var(--radius-pill);
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.sprint-hero { border-color: var(--accent-ring); }
+
+.sprint-item {
+  display: block; width: 100%; text-align: left;
+  padding: 11px 12px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft); background: var(--bg-elev);
+  cursor: pointer; transition: border-color 0.14s, background 0.14s;
+}
+.sprint-item:hover { border-color: var(--border); }
+.sprint-item.selected { border-color: var(--accent); background: var(--accent-soft); }
+.sprint-item-name {
+  font-weight: 650; font-size: 13.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+
+/* Work-done bar with a marker for how much of the sprint's time has passed. */
+.progress-dual { position: relative; overflow: visible; }
+.progress-dual > i {
+  position: absolute; top: -4px; bottom: -4px; width: 2px;
+  background: var(--text); border-radius: 2px; transform: translateX(-1px);
+}
+
+.segmented {
+  display: inline-flex; gap: 2px; padding: 3px;
+  background: var(--panel-2); border-radius: var(--radius-pill);
+}
+.segmented button {
+  border: 0; background: transparent; color: var(--muted);
+  padding: 5px 12px; border-radius: var(--radius-pill);
+  font-size: 12px; font-weight: 600; cursor: pointer;
+}
+.segmented button.on { background: var(--panel); color: var(--text); box-shadow: var(--shadow-sm); }
+
+.radio-row { display: flex; align-items: center; gap: 9px; font-size: 13.5px; cursor: pointer; padding: 3px 0; }
+.radio-row input, .pick-row input { accent-color: var(--accent); width: 16px; height: 16px; flex-shrink: 0; }
+
+.pick-list {
+  max-height: 340px; overflow-y: auto;
+  border: 1px solid var(--border-soft); border-radius: var(--radius-sm);
+}
+.pick-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; cursor: pointer;
+  border-top: 1px solid var(--border-soft);
+}
+.pick-row:first-child { border-top: 0; }
+.pick-row:hover { background: var(--bg-elev); }
+.pick-row.selected { background: var(--accent-soft); }
+.pick-title { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+@media (max-width: 520px) {
+  /* Badges crowd the title out on a phone; the checkbox and title matter most. */
+  .pick-row .badge { display: none; }
+}
+
 /* ==========================================================================
    Responsive / adaptive layout
 

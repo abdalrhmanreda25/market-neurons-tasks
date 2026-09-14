@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { useAuth } from './AuthProvider'
-import { subscribeMyTeams, subscribeTasks, subscribeTeam, subscribeTimeLogs } from '@/lib/db'
+import { subscribeMyTeams, subscribeSprints, subscribeTasks, subscribeTeam, subscribeTimeLogs } from '@/lib/db'
+import { sortSprints } from '@/lib/analytics'
 
 const WorkspaceContext = createContext(null)
 const STORAGE_KEY = 'mn.activeTeam'
@@ -21,6 +22,7 @@ export default function WorkspaceProvider({ children }) {
   const [team, setTeam] = useState(null)
   const [tasks, setTasks] = useState([])
   const [timeLogs, setTimeLogs] = useState([])
+  const [sprints, setSprints] = useState([])
   const [dataLoaded, setDataLoaded] = useState(false)
   const [error, setError] = useState(null)
 
@@ -65,6 +67,7 @@ export default function WorkspaceProvider({ children }) {
       setTeam(null)
       setTasks([])
       setTimeLogs([])
+      setSprints([])
       setDataLoaded(teamsLoaded)
       return undefined
     }
@@ -72,7 +75,7 @@ export default function WorkspaceProvider({ children }) {
     let seen = 0
     const done = () => {
       seen += 1
-      if (seen >= 3) setDataLoaded(true)
+      if (seen >= 4) setDataLoaded(true)
     }
     // A failed listener counts as settled too, otherwise the page spins forever.
     const failed = (err) => {
@@ -90,6 +93,10 @@ export default function WorkspaceProvider({ children }) {
       }, failed),
       subscribeTimeLogs(activeTeamId, (l) => {
         setTimeLogs(l)
+        done()
+      }, failed),
+      subscribeSprints(activeTeamId, (list) => {
+        setSprints(sortSprints(list))
         done()
       }, failed),
     ]
@@ -115,6 +122,9 @@ export default function WorkspaceProvider({ children }) {
       setActiveTeamId,
       tasks,
       timeLogs,
+      sprints,
+      activeSprint: sprints.find((sp) => sp.status === 'active') || null,
+      sprintName: (id) => sprints.find((sp) => sp.id === id)?.name || null,
       members,
       myRole,
       canManage: myRole === 'owner' || myRole === 'admin',
@@ -123,7 +133,7 @@ export default function WorkspaceProvider({ children }) {
       memberPhoto: (uid) => team?.members?.[uid]?.photoURL || null,
       memberTitle: (uid) => team?.members?.[uid]?.title || '',
     }),
-    [teams, teamsLoaded, team, activeTeamId, tasks, timeLogs, members, myRole, dataLoaded, error]
+    [teams, teamsLoaded, team, activeTeamId, tasks, timeLogs, sprints, members, myRole, dataLoaded, error]
   )
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>

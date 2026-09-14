@@ -10,6 +10,7 @@ import { ThemeToggle } from './ThemeProvider'
 const LINKS = [
   { href: '/dashboard', label: 'Dashboard', icon: '◧' },
   { href: '/tasks', label: 'Tasks', icon: '☑' },
+  { href: '/sprints', label: 'Sprints', icon: '⟳' },
   { href: '/hours', label: 'Hours', icon: '◷' },
   { href: '/team', label: 'Team', icon: '☺' },
   { href: '/profile', label: 'My Profile', icon: '☻' },
