@@ -18,7 +18,7 @@ const millis = (ts) => (ts?.toMillis ? ts.toMillis() : ts ? new Date(ts).getTime
 
 export default function NotesPage() {
   const { user } = useAuth()
-  const { teamId, team, members, memberPhoto, loading } = useWorkspace()
+  const { team, loading } = useWorkspace()
 
   const [notes, setNotes] = useState([])
   const [notesLoaded, setNotesLoaded] = useState(false)
@@ -29,17 +29,15 @@ export default function NotesPage() {
   const [toast, setToast] = useState(null)
 
   useEffect(() => {
-    if (!teamId) return undefined
-    setNotesLoaded(false)
+    if (!user) return undefined
     return subscribeNotes(
-      teamId,
       (list) => {
         setNotes(list)
         setNotesLoaded(true)
       },
       () => setNotesLoaded(true)
     )
-  }, [teamId])
+  }, [user])
 
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -75,7 +73,7 @@ export default function NotesPage() {
         <div>
           <h1 className="page-title">Notes & Guidelines</h1>
           <div className="page-sub">
-            How {team?.name || 'the team'} works, and what everyone should know
+            Shared with every team: how we work, and what everyone should know
             {unread ? ` · ${unread} guideline${unread === 1 ? '' : 's'} you haven't read` : ''}
           </div>
         </div>
@@ -131,13 +129,11 @@ export default function NotesPage() {
                 key={n.id}
                 note={n}
                 uid={user.uid}
-                memberCount={members.length}
-                photo={memberPhoto(n.authorId)}
                 onEdit={() => setModal({ kind: n.kind || 'note', note: n })}
-                onPin={() => run(() => setNotePinned(teamId, n.id, !n.pinned))}
-                onAck={(read) => run(() => acknowledgeNote(teamId, n.id, user.uid, read))}
+                onPin={() => run(() => setNotePinned(n.id, !n.pinned))}
+                onAck={(read) => run(() => acknowledgeNote(n.id, user.uid, read))}
                 onDelete={() =>
-                  window.confirm(`Delete "${n.title}"?`) && run(() => deleteNote(teamId, n.id), 'Deleted.')
+                  window.confirm(`Delete "${n.title}"?`) && run(() => deleteNote(n.id), 'Deleted.')
                 }
               />
             ))}
@@ -151,8 +147,8 @@ export default function NotesPage() {
           initial={modal.note}
           onClose={() => setModal(null)}
           onSubmit={async (data) => {
-            if (modal.note) await updateNote(teamId, modal.note.id, data)
-            else await createNote(teamId, { ...data, kind: modal.kind }, user)
+            if (modal.note) await updateNote(modal.note.id, data)
+            else await createNote({ ...data, kind: modal.kind }, user, team)
             flash(true, modal.note ? 'Saved.' : `${modal.kind === 'guideline' ? 'Guideline' : 'Note'} published.`)
           }}
         />
@@ -161,7 +157,7 @@ export default function NotesPage() {
   )
 }
 
-function NoteCard({ note, uid, memberCount, photo, onEdit, onPin, onAck, onDelete }) {
+function NoteCard({ note, uid, onEdit, onPin, onAck, onDelete }) {
   const cat = noteCategoryMeta(note.category)
   const isGuideline = note.kind === 'guideline'
   const acks = note.ackBy || []
@@ -201,15 +197,15 @@ function NoteCard({ note, uid, memberCount, photo, onEdit, onPin, onAck, onDelet
 
       <div className="between wrap" style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border-soft)' }}>
         <div className="row" style={{ gap: 8, minWidth: 0 }}>
-          <Avatar name={note.authorName} seed={note.authorId} src={photo} size="avatar-xs" />
+          <Avatar name={note.authorName} seed={note.authorId} src={note.authorPhoto} size="avatar-xs" />
           <span className="faint" style={{ fontSize: 11.5 }}>
-            {note.authorName} · {formatTimestamp(note.createdAt) || 'just now'}
+            {note.authorName}{note.teamName ? ` (${note.teamName})` : ''} · {formatTimestamp(note.createdAt) || 'just now'}
           </span>
         </div>
         {isGuideline ? (
           <div className="row" style={{ gap: 8 }}>
             <span className="faint" style={{ fontSize: 11.5 }}>
-              Read by {acks.length}/{memberCount}
+              Read by {acks.length}
             </span>
             <button
               className={`btn btn-sm ${readByMe ? 'btn-ghost' : 'btn-accent'}`}
@@ -252,8 +248,8 @@ function NoteForm({ kind, initial, onClose, onSubmit }) {
       wide
       title={initial ? `Edit ${noun}` : `New ${noun}`}
       subtitle={kind === 'guideline'
-        ? 'Guidelines are the team’s agreed way of working. Everyone on the team can add, edit and mark them as read.'
-        : 'Notes are visible to everyone on the team.'}
+        ? 'Guidelines are the team’s agreed way of working. Every team can see them, edit them and mark them as read.'
+        : 'Notes are visible to every team.'}
       onClose={onClose}
     >
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 16 }}>

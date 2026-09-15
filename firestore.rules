@@ -93,21 +93,28 @@ service cloud.firestore {
         allow create, update, delete: if isManager(teamId);
       }
 
-      // Notes and guidelines belong to the whole team: every member can write,
-      // edit, pin and delete them. A new entry must be credited to its author.
-      match /notes/{noteId} {
-        allow read, update, delete: if isMember(teamId);
-        allow create: if isMember(teamId)
-          && request.resource.data.authorId == request.auth.uid
-          && request.resource.data.kind in ['note', 'guideline'];
-      }
-
       match /timeLogs/{logId} {
         allow read: if isMember(teamId);
         allow create: if isMember(teamId) && request.resource.data.userId == request.auth.uid;
         allow update, delete: if isMember(teamId)
           && (resource.data.userId == request.auth.uid || isManager(teamId));
       }
+    }
+
+    // True for someone who belongs to at least one team. The profile's teamIds is
+    // self-editable, so membership is confirmed against the team document itself.
+    function inAnyTeam() {
+      let ids = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamIds;
+      return signedIn() && ids.size() > 0 && (isMember(ids[0]) || isMember(ids[ids.size() - 1]));
+    }
+
+    // Notes and guidelines are shared by every team: any team member can read,
+    // write, edit, pin and delete them. A new entry must credit its author.
+    match /notes/{noteId} {
+      allow read, update, delete: if inAnyTeam();
+      allow create: if inAnyTeam()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.kind in ['note', 'guideline'];
     }
 
     // Pending invites hold only an email, a team name and a role. Reads are open
