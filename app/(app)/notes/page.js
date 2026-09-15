@@ -18,7 +18,7 @@ const millis = (ts) => (ts?.toMillis ? ts.toMillis() : ts ? new Date(ts).getTime
 
 export default function NotesPage() {
   const { user } = useAuth()
-  const { teamId, team, members, canManage, memberPhoto, loading } = useWorkspace()
+  const { team, loading } = useWorkspace()
 
   const [notes, setNotes] = useState([])
   const [notesLoaded, setNotesLoaded] = useState(false)
@@ -29,17 +29,15 @@ export default function NotesPage() {
   const [toast, setToast] = useState(null)
 
   useEffect(() => {
-    if (!teamId) return undefined
-    setNotesLoaded(false)
+    if (!user) return undefined
     return subscribeNotes(
-      teamId,
       (list) => {
         setNotes(list)
         setNotesLoaded(true)
       },
       () => setNotesLoaded(true)
     )
-  }, [teamId])
+  }, [user])
 
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase()
@@ -69,25 +67,20 @@ export default function NotesPage() {
     }
   }
 
-  const canEdit = (n) => canManage || (n.kind === 'note' && n.authorId === user.uid)
-  const canAdd = tab === 'note' || canManage
-
   return (
     <>
       <header className="topbar">
         <div>
           <h1 className="page-title">Notes & Guidelines</h1>
           <div className="page-sub">
-            How {team?.name || 'the team'} works, and what everyone should know
+            Shared with every team: how we work, and what everyone should know
             {unread ? ` · ${unread} guideline${unread === 1 ? '' : 's'} you haven't read` : ''}
           </div>
         </div>
         <div className="row">
-          {canAdd ? (
-            <button className="btn btn-primary" onClick={() => setModal({ kind: tab })}>
-              + {tab === 'guideline' ? 'Add guideline' : 'Add note'}
-            </button>
-          ) : null}
+          <button className="btn btn-primary" onClick={() => setModal({ kind: tab })}>
+            + {tab === 'guideline' ? 'Add guideline' : 'Add note'}
+          </button>
         </div>
       </header>
 
@@ -120,11 +113,9 @@ export default function NotesPage() {
                 ? 'Nothing matches those filters'
                 : tab === 'guideline' ? 'No guidelines yet' : 'No notes yet'}
               hint={tab === 'guideline'
-                ? canManage
-                  ? 'Write down how the team works: workflow, code review, communication, onboarding.'
-                  : 'Owners and admins publish the team guidelines here.'
+                ? 'Write down how the team works: workflow, code review, communication, onboarding.'
                 : 'Share decisions, links, meeting takeaways or anything the team should remember.'}
-              action={canAdd && !search && category === 'all' ? (
+              action={!search && category === 'all' ? (
                 <button className="btn btn-primary btn-sm" onClick={() => setModal({ kind: tab })}>
                   + {tab === 'guideline' ? 'Add the first guideline' : 'Add the first note'}
                 </button>
@@ -138,15 +129,11 @@ export default function NotesPage() {
                 key={n.id}
                 note={n}
                 uid={user.uid}
-                memberCount={members.length}
-                photo={memberPhoto(n.authorId)}
-                canEdit={canEdit(n)}
-                canPin={canManage}
                 onEdit={() => setModal({ kind: n.kind || 'note', note: n })}
-                onPin={() => run(() => setNotePinned(teamId, n.id, !n.pinned))}
-                onAck={(read) => run(() => acknowledgeNote(teamId, n.id, user.uid, read))}
+                onPin={() => run(() => setNotePinned(n.id, !n.pinned))}
+                onAck={(read) => run(() => acknowledgeNote(n.id, user.uid, read))}
                 onDelete={() =>
-                  window.confirm(`Delete "${n.title}"?`) && run(() => deleteNote(teamId, n.id), 'Deleted.')
+                  window.confirm(`Delete "${n.title}"?`) && run(() => deleteNote(n.id), 'Deleted.')
                 }
               />
             ))}
@@ -158,11 +145,10 @@ export default function NotesPage() {
         <NoteForm
           kind={modal.kind}
           initial={modal.note}
-          canPin={canManage}
           onClose={() => setModal(null)}
           onSubmit={async (data) => {
-            if (modal.note) await updateNote(teamId, modal.note.id, data)
-            else await createNote(teamId, { ...data, kind: modal.kind }, user)
+            if (modal.note) await updateNote(modal.note.id, data)
+            else await createNote({ ...data, kind: modal.kind }, user, team)
             flash(true, modal.note ? 'Saved.' : `${modal.kind === 'guideline' ? 'Guideline' : 'Note'} published.`)
           }}
         />
@@ -171,7 +157,7 @@ export default function NotesPage() {
   )
 }
 
-function NoteCard({ note, uid, memberCount, photo, canEdit, canPin, onEdit, onPin, onAck, onDelete }) {
+function NoteCard({ note, uid, onEdit, onPin, onAck, onDelete }) {
   const cat = noteCategoryMeta(note.category)
   const isGuideline = note.kind === 'guideline'
   const acks = note.ackBy || []
@@ -190,18 +176,12 @@ function NoteCard({ note, uid, memberCount, photo, canEdit, canPin, onEdit, onPi
           </span>
         </div>
         <div className="row" style={{ gap: 2 }}>
-          {canPin ? (
-            <button className="btn btn-ghost btn-sm" style={{ padding: '2px 8px' }} onClick={onPin}
-              title={note.pinned ? 'Unpin' : 'Pin to top'}>
-              {note.pinned ? 'Unpin' : 'Pin'}
-            </button>
-          ) : null}
-          {canEdit ? (
-            <>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '2px 8px' }} onClick={onEdit}>Edit</button>
-              <button className="btn btn-danger btn-sm" style={{ padding: '2px 8px' }} onClick={onDelete}>Delete</button>
-            </>
-          ) : null}
+          <button className="btn btn-ghost btn-sm" style={{ padding: '2px 8px' }} onClick={onPin}
+            title={note.pinned ? 'Unpin' : 'Pin to top'}>
+            {note.pinned ? 'Unpin' : 'Pin'}
+          </button>
+          <button className="btn btn-ghost btn-sm" style={{ padding: '2px 8px' }} onClick={onEdit}>Edit</button>
+          <button className="btn btn-danger btn-sm" style={{ padding: '2px 8px' }} onClick={onDelete}>Delete</button>
         </div>
       </div>
 
@@ -217,15 +197,15 @@ function NoteCard({ note, uid, memberCount, photo, canEdit, canPin, onEdit, onPi
 
       <div className="between wrap" style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border-soft)' }}>
         <div className="row" style={{ gap: 8, minWidth: 0 }}>
-          <Avatar name={note.authorName} seed={note.authorId} src={photo} size="avatar-xs" />
+          <Avatar name={note.authorName} seed={note.authorId} src={note.authorPhoto} size="avatar-xs" />
           <span className="faint" style={{ fontSize: 11.5 }}>
-            {note.authorName} · {formatTimestamp(note.createdAt) || 'just now'}
+            {note.authorName}{note.teamName ? ` (${note.teamName})` : ''} · {formatTimestamp(note.createdAt) || 'just now'}
           </span>
         </div>
         {isGuideline ? (
           <div className="row" style={{ gap: 8 }}>
             <span className="faint" style={{ fontSize: 11.5 }}>
-              Read by {acks.length}/{memberCount}
+              Read by {acks.length}
             </span>
             <button
               className={`btn btn-sm ${readByMe ? 'btn-ghost' : 'btn-accent'}`}
@@ -241,7 +221,7 @@ function NoteCard({ note, uid, memberCount, photo, canEdit, canPin, onEdit, onPi
   )
 }
 
-function NoteForm({ kind, initial, canPin, onClose, onSubmit }) {
+function NoteForm({ kind, initial, onClose, onSubmit }) {
   const [title, setTitle] = useState(initial?.title || '')
   const [body, setBody] = useState(initial?.body || '')
   const [category, setCategory] = useState(initial?.category || (kind === 'guideline' ? 'process' : 'general'))
@@ -268,8 +248,8 @@ function NoteForm({ kind, initial, canPin, onClose, onSubmit }) {
       wide
       title={initial ? `Edit ${noun}` : `New ${noun}`}
       subtitle={kind === 'guideline'
-        ? 'Guidelines are the team’s agreed way of working. Everyone can mark them as read.'
-        : 'Notes are visible to everyone on the team.'}
+        ? 'Guidelines are the team’s agreed way of working. Every team can see them, edit them and mark them as read.'
+        : 'Notes are visible to every team.'}
       onClose={onClose}
     >
       <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 16 }}>
@@ -302,12 +282,10 @@ function NoteForm({ kind, initial, canPin, onClose, onSubmit }) {
               : 'Write your note…'} />
         </div>
 
-        {canPin ? (
-          <label className="radio-row">
-            <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
-            Pin to the top
-          </label>
-        ) : null}
+        <label className="radio-row">
+          <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
+          Pin to the top
+        </label>
 
         <div className="row" style={{ justifyContent: 'flex-end', gap: 8 }}>
           <button type="button" className="btn" onClick={onClose}>Cancel</button>

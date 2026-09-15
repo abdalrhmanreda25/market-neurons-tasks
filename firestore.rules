@@ -93,35 +93,28 @@ service cloud.firestore {
         allow create, update, delete: if isManager(teamId);
       }
 
-      // Notes are open to every member; guidelines are the team's rules, so only
-      // managers write them. Pinning is a manager call. Anyone may add or remove
-      // only themselves from a note's `ackBy` read receipts.
-      match /notes/{noteId} {
-        allow read: if isMember(teamId);
-        allow create: if isMember(teamId)
-          && request.resource.data.authorId == request.auth.uid
-          && request.resource.data.kind in ['note', 'guideline']
-          && (isManager(teamId) || (request.resource.data.kind == 'note' && request.resource.data.pinned == false));
-        allow update: if isManager(teamId)
-          || (isMember(teamId)
-              && resource.data.kind == 'note'
-              && resource.data.authorId == request.auth.uid
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['title', 'body', 'category', 'updatedAt']))
-          || (isMember(teamId)
-              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ackBy'])
-              && request.resource.data.ackBy.toSet().difference(resource.data.ackBy.toSet())
-                   .union(resource.data.ackBy.toSet().difference(request.resource.data.ackBy.toSet()))
-                   .hasOnly([request.auth.uid]));
-        allow delete: if isManager(teamId)
-          || (isMember(teamId) && resource.data.kind == 'note' && resource.data.authorId == request.auth.uid);
-      }
-
       match /timeLogs/{logId} {
         allow read: if isMember(teamId);
         allow create: if isMember(teamId) && request.resource.data.userId == request.auth.uid;
         allow update, delete: if isMember(teamId)
           && (resource.data.userId == request.auth.uid || isManager(teamId));
       }
+    }
+
+    // True for someone who belongs to at least one team. The profile's teamIds is
+    // self-editable, so membership is confirmed against the team document itself.
+    function inAnyTeam() {
+      let ids = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamIds;
+      return signedIn() && ids.size() > 0 && (isMember(ids[0]) || isMember(ids[ids.size() - 1]));
+    }
+
+    // Notes and guidelines are shared by every team: any team member can read,
+    // write, edit, pin and delete them. A new entry must credit its author.
+    match /notes/{noteId} {
+      allow read, update, delete: if inAnyTeam();
+      allow create: if inAnyTeam()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.kind in ['note', 'guideline'];
     }
 
     // Pending invites hold only an email, a team name and a role. Reads are open
