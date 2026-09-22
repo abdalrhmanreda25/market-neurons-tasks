@@ -8,7 +8,7 @@ in the browser against Firebase, so any host can serve it.
 1. Go to <https://vercel.com/new> and import
    `abdalrhmanreda25/market-neurons-tasks`.
 2. Framework preset is detected as **Next.js**. Leave the build settings alone -
-   `npm run build` and the `out/` export are picked up automatically.
+   `pnpm build` and the `out/` export are picked up automatically.
 3. Deploy.
 
 **No environment variables are required.** The Firebase web config lives in the
@@ -59,7 +59,7 @@ deploy workflow.
 ## 2. Build
 
 ```bash
-npm run build
+pnpm build
 ```
 
 This produces `out/`. Nothing else in the repo gets uploaded.

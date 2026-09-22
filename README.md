@@ -17,8 +17,8 @@ board, hour tracking, per-task comments, member management and charts for all of
 ## Getting started
 
 ```bash
-npm install
-npm run dev        # http://localhost:3000
+pnpm install
+pnpm dev        # http://localhost:3000
 ```
 
 Firebase config lives in `.env.local` (already filled in for the `secretcomms-6de0e`
