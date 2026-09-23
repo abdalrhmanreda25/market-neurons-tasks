@@ -13,6 +13,7 @@ board, hour tracking, per-task comments, member management and charts for all of
 | **Comments** | Threaded discussion on every task, live-updating, delete your own |
 | **Hours** | Log time against a task or as general work, per-member and per-range filtering, editable entries |
 | **Charts** | Hours trend, status split, hours by member, priority breakdown, top tasks by hours, workload per member |
+| **Developer Docs** | How Market Neurons is built and why: idempotency, debouncing, rate limiting, migrations, N+1, auth cookies, CSP, CI and more, each linked to the files that implement it |
 
 ## Getting started
 
@@ -67,8 +68,9 @@ app/
     hours/               time entries and hour charts
     team/                members, roles, invites, workload chart
     settings/            profile, team, workspace switching
+    docs/                developer docs page (content in lib/devDocs.js)
 components/              providers, shared UI, modals
-lib/                     firebase, firestore data layer, analytics, constants
+lib/                     firebase, firestore data layer, analytics, constants, devDocs
 ```
 
 ## Roles
@@ -77,3 +79,10 @@ lib/                     firebase, firestore data layer, analytics, constants
 - **Admin** — manage members, rename the team, delete any task.
 - **Member** — create and work on tasks, comment, log hours.
 # market-neurons-tasks
+
+## Developer docs
+
+The /docs page renders `lib/devDocs.js`. The content lives in the repo, not
+Firestore, so it changes in the same pull request as the code it describes.
+Add a topic by appending to `DOC_TOPICS` with `what`, `why`, `where` (real file
+paths) and `pitfalls`; link to one with `/docs#<topic-id>`.

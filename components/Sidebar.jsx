@@ -13,6 +13,7 @@ const LINKS = [
   { href: '/sprints', label: 'Sprints', icon: '⟳' },
   { href: '/hours', label: 'Hours', icon: '◷' },
   { href: '/notes', label: 'Notes & Guidelines', icon: '✎' },
+  { href: '/docs', label: 'Developer Docs', icon: '❏' },
   { href: '/team', label: 'Team', icon: '☺' },
   { href: '/profile', label: 'My Profile', icon: '☻' },
   { href: '/settings', label: 'Settings', icon: '⚙' },
