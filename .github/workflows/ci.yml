@@ -14,13 +14,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Version comes from packageManager in package.json, so CI runs the
+      # same pnpm that wrote pnpm-lock.yaml and pnpm-workspace.yaml.
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Write Firebase config
         # These are public web-app values (they ship inside the JS bundle), so
@@ -38,14 +42,15 @@ jobs:
           ENV
 
       - name: Build
-        run: npm run build
+        run: pnpm run build
 
       - name: Check the export is complete
         run: |
           set -e
           required="index.html 404.html .htaccess logo.svg \
             login/index.html dashboard/index.html tasks/index.html task/index.html \
-            team/index.html hours/index.html profile/index.html settings/index.html"
+            team/index.html hours/index.html profile/index.html settings/index.html \
+            docs/index.html"
           missing=""
           for f in $required; do
             [ -e "out/$f" ] || missing="$missing $f"
