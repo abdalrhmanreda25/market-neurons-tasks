@@ -49,7 +49,8 @@ jobs:
           set -e
           required="index.html 404.html .htaccess logo.svg \
             login/index.html dashboard/index.html tasks/index.html task/index.html \
-            team/index.html hours/index.html profile/index.html settings/index.html"
+            team/index.html hours/index.html profile/index.html settings/index.html \
+            docs/index.html"
           missing=""
           for f in $required; do
             [ -e "out/$f" ] || missing="$missing $f"
