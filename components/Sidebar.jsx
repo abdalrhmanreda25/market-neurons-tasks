@@ -15,6 +15,8 @@ const LINKS = [
   { href: '/notes', label: 'Notes & Guidelines', icon: '✎' },
   { href: '/docs', label: 'Developer Docs', icon: '❏' },
   { href: '/team', label: 'Team', icon: '☺' },
+  // Owners and admins only; the page and the Firestore rules both enforce it.
+  { href: '/infra', label: 'Infrastructure', icon: '⛁', managersOnly: true },
   { href: '/profile', label: 'My Profile', icon: '☻' },
   { href: '/settings', label: 'Settings', icon: '⚙' },
 ]
@@ -22,7 +24,7 @@ const LINKS = [
 export default function Sidebar({ open = false, onNavigate }) {
   const pathname = usePathname()
   const { user, signOut } = useAuth()
-  const { teams, teamId, setActiveTeamId } = useWorkspace()
+  const { teams, teamId, setActiveTeamId, canManage } = useWorkspace()
 
   return (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
@@ -44,7 +46,7 @@ export default function Sidebar({ open = false, onNavigate }) {
       ) : null}
 
       <nav className="nav">
-        {LINKS.map((link) => (
+        {LINKS.filter((link) => !link.managersOnly || canManage).map((link) => (
           <Link
             key={link.href}
             href={link.href}
