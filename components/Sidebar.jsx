@@ -17,6 +17,7 @@ const LINKS = [
   { href: '/team', label: 'Team', icon: '☺' },
   // Owners and admins only; the page and the Firestore rules both enforce it.
   { href: '/infra', label: 'Infrastructure', icon: '⛁', managersOnly: true },
+  { href: '/server', label: 'Server management', icon: '⌘', managersOnly: true },
   { href: '/profile', label: 'My Profile', icon: '☻' },
   { href: '/settings', label: 'Settings', icon: '⚙' },
 ]
