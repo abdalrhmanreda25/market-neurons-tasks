@@ -712,6 +712,31 @@ img, svg, canvas { max-width: 100%; }
   .infra-grid { grid-template-columns: 1fr; }
 }
 
+/* ======================================================= server management */
+/* Arabic log of VPS work; reuses the infra/docs pieces, flipped for RTL. */
+
+.server-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.server-report { line-height: 1.7; }
+.server-steps li { padding-left: 0; padding-right: 34px; }
+.server-steps li::before { left: auto; right: 0; }
+.server-steps .docs-list { padding-left: 0; padding-right: 18px; }
+/* .infra-steps numbers every descendant li; the bullets inside a step are not steps. */
+.server-steps .docs-list li { padding-right: 0; counter-increment: none; }
+.server-steps .docs-list li::before { content: none; }
+.server-explainer {
+  margin-top: 14px; padding: 12px 16px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border-soft); background: var(--bg-elev);
+}
+.server-explainer p { margin: 0 0 8px; }
+.server-points { margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+.server-points dt { font-weight: 650; }
+.server-points dd { margin: 2px 0 0; color: var(--muted); }
+.server-ports th, .server-ports td { text-align: right; }
+.server-ports code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+.server-table-wrap { overflow-x: auto; }
+@media (max-width: 1000px) { .server-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 560px) { .server-ports th, .server-ports td { padding: 10px 8px; } }
+
 @media (max-width: 560px) {
   .infra-facts > div { grid-template-columns: 1fr; gap: 4px; }
   .infra-form-row { grid-template-columns: 1fr; }
